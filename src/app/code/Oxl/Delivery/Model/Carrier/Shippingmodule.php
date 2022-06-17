@@ -39,23 +39,23 @@ class Shippingmodule extends AbstractCarrier implements CarrierInterface
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory $rateErrorFactory
      * @param \Psr\Log\LoggerInterface $logger
+     * @param \Magento\Checkout\Model\Session $checkoutSession
      * @param \Magento\Shipping\Model\Rate\ResultFactory $rateResultFactory
      * @param \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory $rateMethodFactory
-     * @param array $data
      * @param  \Magento\Customer\Model\Session $customerSession
-     * @param \Magento\Checkout\Model\Session $checkoutSession
+     * @param array $data
      */
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory $rateErrorFactory,
         \Psr\Log\LoggerInterface $logger,
+        \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Shipping\Model\Rate\ResultFactory $rateResultFactory,
         \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory $rateMethodFactory,
-        array $data = [],
         \Magento\Customer\Model\Session $customerSession = null,
-        \Magento\Checkout\Model\Session $checkoutSession = null
+        ?array $data = null
     ) {
-        parent::__construct($scopeConfig, $rateErrorFactory, $logger, $data);
+        parent::__construct($scopeConfig, $rateErrorFactory, $logger, $data ?: []);
 
         $this->rateResultFactory = $rateResultFactory;
         $this->rateMethodFactory = $rateMethodFactory;
@@ -70,7 +70,7 @@ class Shippingmodule extends AbstractCarrier implements CarrierInterface
      * @return \Magento\Shipping\Model\Rate\Result|bool
      */
     public function collectRates(RateRequest $request)
-    {        
+    {
         $price = 0;
         $payment_method = $this->_checkoutSession->getQuote()->getPayment()->getMethod();
         if ( $this->_checkoutSession->getEcontShippingPriceCod() ) {
@@ -79,7 +79,7 @@ class Shippingmodule extends AbstractCarrier implements CarrierInterface
             $price = $this->_checkoutSession->getEcontShippingPriceCod();
         } else if ( $payment_method != null ) {
             $price = $this->_checkoutSession->getEcontShippingPrice();
-        } 
+        }
         if (!$this->getConfigFlag('active')) {
             return false;
         }
