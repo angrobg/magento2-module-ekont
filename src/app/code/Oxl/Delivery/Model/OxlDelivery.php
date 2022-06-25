@@ -64,7 +64,7 @@ class OxlDelivery  implements OxlDeliveryInterface
      */
     public function getTitle()
     {
-        return $this->helper->getConfig( 'carriers/econtdelivery/name' );;
+        return $this->helper->getConfig( 'carriers/econtdelivery/name' );
     }
 
     /**
@@ -109,7 +109,7 @@ class OxlDelivery  implements OxlDeliveryInterface
      * @return string|null
      **/
     public function getEcontCustomerInfoUrl()
-    {     
+    {
         if ( $this->customer_info_url === null )
             return $this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL;
 
@@ -123,7 +123,7 @@ class OxlDelivery  implements OxlDeliveryInterface
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      **/
     public function setEcontCustomerInfoUrl( $key )
-    {                
+    {
         if ( $key )
             $this->customer_info_url = ( $this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL ) . 'customer_info.php?';
     }
@@ -146,7 +146,7 @@ class OxlDelivery  implements OxlDeliveryInterface
      * Undocumented function long description
      *
      * @param bool $key
-     * 
+     *
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      **/
     public function setEcontShopId( $key )
@@ -207,8 +207,8 @@ class OxlDelivery  implements OxlDeliveryInterface
      *
      * @return \Magento\Checkout\Model\Session
      **/
-    public function getCheckoutSession() 
+    public function getCheckoutSession()
     {
         return $this->_checkoutSession;
-    }    
+    }
 }
