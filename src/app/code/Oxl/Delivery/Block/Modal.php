@@ -3,6 +3,7 @@
  * Copyright © 2016 AionNext Ltd. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Oxl\Delivery\Block;
 
 use Magento\Framework\View\Element\Template;
@@ -47,8 +48,9 @@ class Modal extends Template
         // \Aion\Test\Model\Test $test,
         // \Aion\Test\Model\TestFactory $testFactory,
         // \Aion\Test\Model\ResourceModel\Test\CollectionFactory $itemCollectionFactory,
-        array $data = []
-    ) {
+        array            $data = []
+    )
+    {
         // $this->test = $test;
         // $this->testFactory = $testFactory;
         // $this->itemCollectionFactory = $itemCollectionFactory;
@@ -115,4 +117,4 @@ class Modal extends Template
     {
         return $this->getBaseUrl();
     }
-} 
+}
