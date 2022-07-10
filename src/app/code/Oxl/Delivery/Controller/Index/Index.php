@@ -3,6 +3,7 @@
  * Copyright © 2015 AionNext Ltd. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Oxl\Delivery\Controller\Index;
 
 use Magento\Framework\App\Action\Context;
@@ -40,11 +41,12 @@ class Index extends \Magento\Framework\App\Action\Action
      * @param \Aion\Test\Helper\Data $helper
      */
     public function __construct(
-        Context $context,
-        PageFactory $resultPageFactory,
+        Context        $context,
+        PageFactory    $resultPageFactory,
         ForwardFactory $resultForwardFactory
         // \Aion\Test\Helper\Data $helper
-    ) {
+    )
+    {
         $this->resultPageFactory = $resultPageFactory;
         $this->resultForwardFactory = $resultForwardFactory;
         // $this->helper = $helper;
@@ -87,4 +89,4 @@ class Index extends \Magento\Framework\App\Action\Action
     {
         // var_dump($request); die;
     }
-} 
+}

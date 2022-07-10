@@ -12,7 +12,7 @@ use \Magento\Checkout\Model\Session;
  * @method \Webkul\Marketplace\Model\ResourceModel\Product _getResource()
  * @method \Webkul\Marketplace\Model\ResourceModel\Product getResource()
  */
-class OxlDelivery  implements OxlDeliveryInterface
+class OxlDelivery implements OxlDeliveryInterface
 {
     const REAL_URL = 'https://delivery.econt.com/';
     const DEMO_URL = 'http://delivery.demo.econt.com/';
@@ -28,13 +28,14 @@ class OxlDelivery  implements OxlDeliveryInterface
     public $shop_id;
     public $customer_info_url;
 
-    public function __construct ( DataFactory $data, Session $checkoutSession )
+    public function __construct(DataFactory $data, Session $checkoutSession)
     {
         $this->helper = $data->create();
 
         // $this->is_demo = boolval( $this->helper->getConfig( 'carriers/econt_delivery/demo_service' ) );
         $this->_checkoutSession = $checkoutSession;
     }
+
     /**
      * Get ID.
      *
@@ -64,7 +65,7 @@ class OxlDelivery  implements OxlDeliveryInterface
      */
     public function getTitle()
     {
-        return $this->helper->getConfig( 'carriers/econtdelivery/name' );
+        return $this->helper->getConfig('carriers/econtdelivery/name');
     }
 
     /**
@@ -85,7 +86,7 @@ class OxlDelivery  implements OxlDeliveryInterface
      */
     public function getPrivateKey()
     {
-        return $this->helper->getConfig( 'carriers/econtdelivery/key' );
+        return $this->helper->getConfig('carriers/econtdelivery/key');
     }
 
     /**
@@ -95,10 +96,10 @@ class OxlDelivery  implements OxlDeliveryInterface
      *
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      */
-    public function setPrivateKey( $key )
+    public function setPrivateKey($key)
     {
         if ($key)
-            $this->key = $this->helper->getConfig( 'carriers/econtdelivery/key' );
+            $this->key = $this->helper->getConfig('carriers/econtdelivery/key');
     }
 
     /**
@@ -110,7 +111,7 @@ class OxlDelivery  implements OxlDeliveryInterface
      **/
     public function getEcontCustomerInfoUrl()
     {
-        if ( $this->customer_info_url === null )
+        if ($this->customer_info_url === null)
             return $this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL;
 
         return $this->customer_info_url;
@@ -122,10 +123,10 @@ class OxlDelivery  implements OxlDeliveryInterface
      * Undocumented function long description
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      **/
-    public function setEcontCustomerInfoUrl( $key )
+    public function setEcontCustomerInfoUrl($key)
     {
-        if ( $key )
-            $this->customer_info_url = ( $this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL ) . 'customer_info.php?';
+        if ($key)
+            $this->customer_info_url = ($this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL) . 'customer_info.php?';
     }
 
     /**
@@ -149,10 +150,11 @@ class OxlDelivery  implements OxlDeliveryInterface
      *
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      **/
-    public function setEcontShopId( $key )
+    public function setEcontShopId($key)
     {
-        if ( $key )
-            $this->shop_id = $this->helper->getConfig( 'carriers/econtdelivery/identifier' );
+        if ($key) {
+            $this->shop_id = $this->helper->getConfig('carriers/econtdelivery/identifier');
+        }
     }
 
     /**
@@ -163,13 +165,13 @@ class OxlDelivery  implements OxlDeliveryInterface
      * @param mixed $var Description
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      **/
-    public function prepareModel( $var = null )
+    public function prepareModel($var = null)
     {
-        if( gettype( $var ) === 'string' )
-            $this->setModel( $var );
-        else if ( gettype( $var ) === 'array' ) {
-            foreach( $var as $key => $value ) {
-                $this->setModel( $value );
+        if (gettype($var) === 'string')
+            $this->setModel($var);
+        else if (gettype($var) === 'array') {
+            foreach ($var as $key => $value) {
+                $this->setModel($value);
             }
         } else {
             throw new \Exception;
@@ -184,17 +186,17 @@ class OxlDelivery  implements OxlDeliveryInterface
      * @param string $var Description
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      **/
-    public function setModel( $var )
+    public function setModel($var)
     {
-        switch ( $var ) {
+        switch ($var) {
             case "key":
-                $this->setPrivateKey( true );
+                $this->setPrivateKey(true);
                 break;
             case "shop_id":
-                $this->setEcontShopId( true );
+                $this->setEcontShopId(true);
                 break;
             case "customer_info_url":
-                $this->setEcontCustomerInfoUrl( true );
+                $this->setEcontCustomerInfoUrl(true);
                 break;
         }
         return $this;

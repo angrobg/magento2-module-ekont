@@ -8,16 +8,16 @@ use \Magento\Framework\App\Helper\Context;
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
 
-    public function __construct ( 
+    public function __construct(
         Context $context
     )
     {
-        parent::__construct($context);    
+        parent::__construct($context);
     }
 
     /**
      * Get the module config data
-     * 
+     *
      * @return string
      */
     public function getConfig($config_path)
@@ -30,7 +30,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     /**
      * Check if we using Demo service
-     * 
+     *
      * @return bool
      */
     public function is_demo()
@@ -42,14 +42,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     /**
      * Based on the demo setting returns the appropiate url
-     * 
+     *
      * @return string URL
      */
     public function get_service_url()
     {
         $url = '';
-        
-        if ( $this->is_demo() ) {
+
+        if ($this->is_demo()) {
             $url = OxlDelivery::DEMO_URL;
         } else {
             $url = OxlDelivery::REAL_URL;
@@ -60,24 +60,24 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     /**
      * Retrieve the stored in database setting
-     * 
+     *
      * @param bool $encrypt Encrypt the string or not
-     * 
+     *
      * @return string
      */
-    public function get_private_key( $encrypt = false )
+    public function get_private_key($encrypt = false)
     {
         $key = $this->getConfig('carriers/econtdelivery/key');
-        
-        return $encrypt ? base64_encode( $key ) : $key;
+
+        return $encrypt ? base64_encode($key) : $key;
     }
 
     /**
      * The tracking url
-     * 
+     *
      * @return string
      */
-    public function get_tracking_url( $code )
+    public function get_tracking_url($code)
     {
         return Delivery_With_Econt_Options::get_track_url() . $code;
     }
@@ -88,41 +88,41 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * Check stored shop_id, private_key and demo_service options with Econt via curl request
      *
      * @param array $new_settings The settings entered by the user
-     * @return array 
+     * @return array
      **/
-    public function check_econt_configuration( $new_settings = array(), $order_number = '4812384' )
+    public function check_econt_configuration($new_settings = array(), $order_number = '4812384')
     {
-        $endpoint = $this->get_service_url( array_key_exists( 'demo_service', $new_settings ) );
+        $endpoint = $this->get_service_url(array_key_exists('demo_service', $new_settings));
         $secret = $new_settings['private_key'];
 
         $curl = curl_init();
-        curl_setopt( $curl, CURLOPT_URL, $endpoint . "services/OrdersService.getTrace.json" );
-        curl_setopt( $curl, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $curl, CURLOPT_SSL_VERIFYPEER, false );
-        curl_setopt( $curl, CURLOPT_SSL_VERIFYHOST, false );
-        curl_setopt( $curl, CURLOPT_HTTPHEADER, [
+        curl_setopt($curl, CURLOPT_URL, $endpoint . "services/OrdersService.getTrace.json");
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
             "Authorization: " . $secret
-        ] );
-        curl_setopt( $curl, CURLOPT_POST, true );
-        curl_setopt( $curl, CURLOPT_POSTFIELDS, json_encode( array(
+        ]);
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode(array(
             'orderNumber' => $order_number
-        ) ) );
-        curl_setopt( $curl, CURLOPT_TIMEOUT, 6 );
-        $res = curl_exec( $curl );
-        $response = json_decode( $res, true );
+        )));
+        curl_setopt($curl, CURLOPT_TIMEOUT, 6);
+        $res = curl_exec($curl);
+        $response = json_decode($res, true);
 
-        curl_close( $curl );
+        curl_close($curl);
 
         // if( is_array( $response ) && array_key_exists('type', $response) && $response['type'] == 'ExAccessDenied' ) {
         //     return $response;
-  
-        // } 
+
+        // }
 
         return $response;
     }
 
-    public function econt_calculate_cart_price( $cart )
+    public function econt_calculate_cart_price($cart)
     {
         $price = 0;
         foreach ($cart as $key => $item) {
@@ -131,8 +131,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
         return $price;
     }
-    
-    public function getWaybillPopupUrl($order_number) {
+
+    public function getWaybillPopupUrl($order_number)
+    {
         $conf = ['private_key' => $this->get_private_key()];
         $data = $this->check_econt_configuration($conf, $order_number);
         return $data['pdfURL'];
@@ -149,7 +150,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         $tracksCollection = $tracking_object->getTracksCollection();
         foreach ($tracksCollection->getItems() as $track) {
-            $trackNumbers[] = $track->getTrackNumber();       
+            $trackNumbers[] = $track->getTrackNumber();
         }
         $tracking_number = $trackNumbers[0];
         return 'https://www.econt.com/services/track-shipment/' . $tracking_number;

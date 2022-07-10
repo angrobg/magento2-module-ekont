@@ -42,19 +42,20 @@ class Shippingmodule extends AbstractCarrier implements CarrierInterface
      * @param \Magento\Checkout\Model\Session $checkoutSession
      * @param \Magento\Shipping\Model\Rate\ResultFactory $rateResultFactory
      * @param \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory $rateMethodFactory
-     * @param  \Magento\Customer\Model\Session $customerSession
+     * @param \Magento\Customer\Model\Session $customerSession
      * @param array $data
      */
     public function __construct(
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory $rateErrorFactory,
-        \Psr\Log\LoggerInterface $logger,
-        \Magento\Checkout\Model\Session $checkoutSession,
-        \Magento\Shipping\Model\Rate\ResultFactory $rateResultFactory,
+        \Magento\Framework\App\Config\ScopeConfigInterface          $scopeConfig,
+        \Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory  $rateErrorFactory,
+        \Psr\Log\LoggerInterface                                    $logger,
+        \Magento\Checkout\Model\Session                             $checkoutSession,
+        \Magento\Shipping\Model\Rate\ResultFactory                  $rateResultFactory,
         \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory $rateMethodFactory,
-        \Magento\Customer\Model\Session $customerSession = null,
-        ?array $data = null
-    ) {
+        \Magento\Customer\Model\Session                             $customerSession = null,
+        ?array                                                      $data = null
+    )
+    {
         parent::__construct($scopeConfig, $rateErrorFactory, $logger, $data ?: []);
 
         $this->rateResultFactory = $rateResultFactory;
@@ -71,18 +72,28 @@ class Shippingmodule extends AbstractCarrier implements CarrierInterface
      */
     public function collectRates(RateRequest $request)
     {
-        $price = 0;
-        $payment_method = $this->_checkoutSession->getQuote()->getPayment()->getMethod();
-        if ( $this->_checkoutSession->getEcontShippingPriceCod() ) {
-            $price = $this->_checkoutSession->getEcontShippingPriceCod();
-        } else if ( $payment_method != null && $payment_method === 'cashondelivery' ) {
-            $price = $this->_checkoutSession->getEcontShippingPriceCod();
-        } else if ( $payment_method != null ) {
-            $price = $this->_checkoutSession->getEcontShippingPrice();
-        }
+        // NIMA CHANGES
         if (!$this->getConfigFlag('active')) {
             return false;
         }
+
+        $shippingCost = 0;
+        $payment_method = $this->_checkoutSession->getQuote()->getPayment()->getMethod();
+
+        // NIMA CHANGES
+        if ($payment_method === 'cashondelivery') {
+            $shippingCost = $this->_checkoutSession->getEcontShippingPriceCod();
+        } else {
+            $shippingCost = $this->_checkoutSession->getEcontShippingPrice();
+        }
+
+//        if ($this->_checkoutSession->getEcontShippingPriceCod()) {
+//            $shippingCost = $this->_checkoutSession->getEcontShippingPriceCod();
+//        } else if ($payment_method != null && $payment_method === 'cashondelivery') {
+//            $shippingCost = $this->_checkoutSession->getEcontShippingPriceCod();
+//        } else if ($payment_method != null) {
+//            $shippingCost = $this->_checkoutSession->getEcontShippingPrice();
+//        }
 
         /** @var \Magento\Shipping\Model\Rate\Result $result */
         $result = $this->rateResultFactory->create();
@@ -95,9 +106,9 @@ class Shippingmodule extends AbstractCarrier implements CarrierInterface
 
         $method->setMethod($this->_code);
         $method->setMethodTitle($this->getConfigData('name'));
-
-        // $shippingCost = (float)$this->getConfigData('shipping_cost');
-        $shippingCost = $price;
+//
+//        // $shippingCost = (float)$this->getConfigData('shipping_cost');
+//        $shippingCost = $price;
 
         $method->setPrice($shippingCost);
         $method->setCost($shippingCost);

@@ -50,13 +50,34 @@ define([
                 shipping_data: {},
                 shipping_price_cod: null,
                 baseUrl: '',
+                paymentMethod: null,
+                defaultPostCode: '1000',
                 iframeLoadedOnce: false,
                 carrier_code: 'econtdelivery',
+                shippingPriceCalculated: false,
+                cashondelivery_pm_code: 'cashondelivery',
                 selected_carrier_code: '',
                 initialize: function () {
                     this.baseUrl = config.AjaxUrl;
 
                     var self = this;
+
+                    // NIMA CHANGES
+                    quote.paymentMethod.subscribe(function (method) {
+                        var shouldUpdatePaymentstate = this.paymentMethod !== null;
+                        this.paymentMethod = null;
+
+                        if (method) {
+                            this.paymentMethod = method.method;
+                        }
+                        console.log('Payment method changed (ekont)', this.paymentMethod);
+
+                        self.updateTotals(method);
+
+                        // if (shouldUpdatePaymentstate) {
+                        //     self.updatePaymentDataState(true);
+                        // }
+                    }, this);
 
                     // NIMA CHANGES
                     quote.shippingMethod.subscribe(function (val) {
@@ -75,9 +96,9 @@ define([
                         //     sidebarModel.hide();
                         // }
                     })
-                    quote.paymentMethod.subscribe(function (method) {
-                        self.updateTotals(method);
-                    });
+                },
+                isCODSelected: function () {
+                    return this.paymentMethod === this.cashondelivery_pm_code;
                 },
                 isCarrierSelected: function () {
                     return this.selected_carrier_code === this.carrier_code;
@@ -94,6 +115,9 @@ define([
                         self.loadModal();
                     }, 800)
                 },
+                isShippingPriceCalculated: function () {
+                    return this.shippingPriceCalculated;
+                },
                 toggleCalculateshippingButton: function () {
                     var self = this;
 
@@ -108,7 +132,11 @@ define([
                     }, 800)
                 },
                 loadModal: function () {
-                    if (quote.shippingMethod().carrier_code !== 'econtdelivery') return;
+                    if (!this.isCarrierSelected()) {
+                        return;
+                    }
+
+                    // if (quote.shippingMethod().carrier_code !== 'econtdelivery') return;
                     var data;
                     var footer;
                     let cdata
@@ -158,7 +186,11 @@ define([
                     orderParams.customer_address = ''
                     orderParams.order_weight = 0
                     orderParams.customer_city_name = cdata.shippingAddressFromData.city || ''
+
                     orderParams.customer_post_code = cdata.shippingAddressFromData.postcode || ''
+                    orderParams.customer_post_code = (orderParams.customer_post_code === '-' ||
+                    !orderParams.customer_post_code ? this.defaultPostCode : orderParams.customer_post_code);
+
                     orderParams.customer_phone = cdata.shippingAddressFromData.telephone || ''
                     orderParams.ignore_history = 1
                     orderParams.customer_email = cdata.validatedEmailValue || ''
@@ -181,6 +213,11 @@ define([
                     var iframeContainer = $('#place_iframe_here');
                     var self = this;
 
+                    console.log('Ekont prepare iframe', {
+                        cdata: cdata,
+                        orderParams: orderParams
+                    });
+
                     $.ajax({
                         // showLoader: true,
                         url: url + 'rest/V1/econt/delivery/get-iframe-data',
@@ -193,7 +230,7 @@ define([
                         // NIMA CHANGES
                         // iframe = '<iframe src="' + data.econt_customer_info_url + jQuery.param(orderParams) +
                         //     '" scrolling="yes" id="delivery_with_econt_iframe"></iframe>'
-                        iframe = '<iframe src="' + data.econt_customer_info_url + jQuery.param(orderParams) +
+                        iframe = '<iframe scrolling="no" src="' + data.econt_customer_info_url + jQuery.param(orderParams) +
                             '" id="delivery_with_econt_iframe"></iframe>'
                         // append the generated iframe in the div
                         iframeContainer.append(iframe);
@@ -218,6 +255,11 @@ define([
                     })
                 },
                 updateShippingAddress: function (data) {
+                    console.log('updateShippingAddress', data);
+
+                    this.shipping_price_cod = Math.round((data['shipping_price_cod'] - data['shipping_price']) * 100) / 100;
+                    this.shipping_data = data
+
                     var full_name = [];
                     var company = '';
                     var updateBilling;
@@ -276,9 +318,38 @@ define([
                     }
                 },
                 updateShippingPrice: function (data) {
+                    this.shipping_data = data;
+                    this.updatePaymentDataState();
+                },
+                updatePaymentDataState: function (silent) {
+                    // console.log('updatePaymentDataState');
+
+                    console.log('ekont :: requestShippingEstimate / updatePaymentDataState');
+
+                    var self = this;
+                    silent = silent || false;
+                    var shipping_data = this.shipping_data;
+
+                    if (Object.keys(shipping_data).length === 0) {
+                        return;
+                    }
+
+                    console.log('updatePaymentDataState data', {
+                        shipping_data: shipping_data,
+                        isCod: this.isCODSelected()
+                    })
+
+                    var priceDataField = this.isCODSelected() ? 'shipping_price_cod' : 'shipping_price';
+                    var priceData = shipping_data[priceDataField] || 0;
+
+                    console.log('updatePaymentDataState price', priceData);
+
                     var address = quote.shippingAddress();
                     var _that = this;
-                    shippingService.isLoading(true);
+
+                    if (!silent) {
+                        shippingService.isLoading(true);
+                    }
                     storage.post(
                         resourceUrlManager.getUrlForEstimationShippingMethodsForNewAddress(quote),
                         JSON.stringify({
@@ -288,41 +359,24 @@ define([
                     ).done(function (result) {
                         var r = _.each(result, function (res) {
                             if (res.carrier_code === 'econtdelivery') {
-                                res.amount = data['shipping_price_cod'];
-                                res.base_amount = data['shipping_price_cod'];
-                                res.price_excl_tax = data['shipping_price_cod'];
-                                res.price_incl_tax = data['shipping_price_cod'];
+                                res.amount = priceData;
+                                res.base_amount = priceData;
+                                res.price_excl_tax = priceData;
+                                res.price_incl_tax = priceData;
                             }
 
                             return res;
                         });
                         rateRegistry.set(address.getKey(), r);
                         shippingService.setShippingRates(r);
-                        _that.updateQuoteShippingTotals(data['shipping_price_cod']);
+                        _that.updateQuoteShippingTotals(priceData);
                     }).fail(function (response) {
                         shippingService.setShippingRates([]);
                         errorProcessor.process(response);
                     }).always(function () {
-                        shippingService.isLoading(false);
-
-                        // if ( ! stepNavigator.isProcessed( 'shipping' ) ) {
-                        //     console.log('hims');
-
-                        //     // stepNavigator.next();
-                        //     // setShippingInformationAction().done(
-                        //     //     function () {
-                        //     //     }
-                        //     // );
-                        // } else {
-
-                        //     var chkd = $( 'input[type="radio"][name="payment[method]"]:checked' )
-                        //     console.log('hams');
-                        //     if ( chkd.length && chkd[0].value === 'cashondelivery' ) {
-                        //
-                        //     }
-
-                        //     $('input[type="radio"][name="payment[method]"]').on('change', _that.blah )
-                        // }
+                        if (!silent) {
+                            shippingService.isLoading(false);
+                        }
                     });
                 },
                 updateTotals: function (data) {
@@ -337,7 +391,7 @@ define([
                         }, 1000)
                     }
 
-                    if (data.method === 'cashondelivery') {
+                    if (data.method === this.cashondelivery_pm_code) {
                         if (totals.base_shipping_incl_tax < this.shipping_data.shipping_price_cod)
                             this.updateQuoteShippingTotals(this.shipping_price_cod, true);
                     } else {
@@ -419,8 +473,14 @@ define([
                             always: function () {
                                 if (proceed && data) {
                                     _that.updateShippingPrice(data);
-                                    $('#place_iframe_here').empty();
+                                    // $('#place_iframe_here').empty();
                                     _that.storeSessionPriceData(data);
+                                    _that.shippingPriceCalculated = true;
+
+                                    $(document).trigger('oxl-econt-shipping-cost-selected', {
+                                        isValid: _that.shippingPriceCalculated
+                                    });
+
                                 } else {
                                     if (modal)
                                         modal.modal('toggleModal');

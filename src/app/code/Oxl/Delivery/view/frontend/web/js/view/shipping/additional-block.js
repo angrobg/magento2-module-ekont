@@ -6,6 +6,9 @@ define([
     'use strict';
 
     window.addEventListener('message', function (message) {
+
+        console.log('ekont message received', message);
+
         /**
          * check if this "message" comes from econt delivery system
          */
@@ -18,18 +21,18 @@ define([
         var proceed = false;
         var content;
 
-        econtModalHelper.shipping_price_cod = Math.round((data['shipping_price_cod'] - data['shipping_price']) * 100) / 100;
-        econtModalHelper.shipping_data = data
-
         if (data.shipment_error) {
             content = data.shipment_error
         } else {
             econtModalHelper.updateShippingAddress(data);
             proceed = true
             content = $.mage.__('Цена на доставката: ')
-                + data['shipping_price'] + ' ' + data['shipping_price_currency_sign']
-                + " ( + " + econtModalHelper.shipping_price_cod + ' ' + data['shipping_price_currency_sign']
-                + $.mage.__(' наложен платеж') + ').'
+                + data['shipping_price'] + ' ' + data['shipping_price_currency_sign'];
+
+            if (econtModalHelper.isCODSelected()) {
+                content = content + " ( + " + econtModalHelper.shipping_price_cod + ' ' + data['shipping_price_currency_sign']
+                    + $.mage.__(' наложен платеж') + ').';
+            }
         }
 
         // NIMA CHANGES

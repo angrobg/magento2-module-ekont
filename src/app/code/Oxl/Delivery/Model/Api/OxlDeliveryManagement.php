@@ -16,15 +16,15 @@ class OxlDeliveryManagement implements OxlDeliveryManagementInterface
     protected $_testApiFactory;
     protected $helper;
     protected $order;
-    
+
     public function __construct(
         OxlDeliveryFactory $testApiFactory,
         DataFactory $data,
         Order $order
     ) {
         // var_dump($data);die();
-        $this->_testApiFactory = $testApiFactory;        
-        $this->helper = $data;        
+        $this->_testApiFactory = $testApiFactory;
+        $this->helper = $data;
         $this->order = $order;
     }
 
@@ -66,7 +66,7 @@ class OxlDeliveryManagement implements OxlDeliveryManagementInterface
     {
         $model = $this->_testApiFactory
                 ->create();
-        
+
         $model->prepareModel(['shop_id', 'customer_info_url']);
 
         return $model;
@@ -80,14 +80,15 @@ class OxlDeliveryManagement implements OxlDeliveryManagementInterface
      * @param string $econt_id
      * @param float $shipping_price
      * @param float $shipping_price_cod
-     * 
+     *
      * @return int status
      */
     public function setPaymentData($econt_id = null, $shipping_price = null, $shipping_price_cod = null)
     {
         $model = $this->_testApiFactory->create();
-        if ( ! $econt_id || ! $shipping_price || ! $shipping_price_cod) 
+        if ( ! $econt_id || ! $shipping_price || ! $shipping_price_cod) {
             return self::SEVERE_ERROR;
+        }
 
         $model->getCheckoutSession()->setEcontId( $econt_id );
         $model->getCheckoutSession()->setEcontShippingPrice( $shipping_price );
