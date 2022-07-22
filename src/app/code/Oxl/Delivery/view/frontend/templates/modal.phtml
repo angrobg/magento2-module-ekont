@@ -6,7 +6,7 @@
 <!--</div>-->
 
 <?php
-    $ajaxurl = $block->getAjaxUrl();
+$ajaxurl = $block->getAjaxUrl();
 ?>
 <script type="text/x-magento-init">
     {
@@ -16,6 +16,7 @@
             }
         }
     }
+
 </script>
 
 <style>
@@ -23,11 +24,21 @@
         padding-top: 25px;
     }
 
+    #econt-iframe-modal .fieldset {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    #econt-iframe-modal .fieldset .legend {
+        margin: 0;
+    }
+
     #place_iframe_here > iframe {
         width: 100%;
         min-height: 500px;
         border: none;
-        height: 700px;
+        height: 710px;
         overflow: hidden
     }
 

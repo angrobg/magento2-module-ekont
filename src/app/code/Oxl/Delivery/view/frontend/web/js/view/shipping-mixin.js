@@ -4,8 +4,7 @@ define(['jquery'], function ($) {
     return function (Component) {
         return Component.extend({
             validateShippingInformation: function () {
-                var result = this._super();
-                return result;
+                return this._super();
             }
         });
     }

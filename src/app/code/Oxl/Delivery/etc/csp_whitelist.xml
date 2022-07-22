@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<csp_whitelist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Csp/etc/csp_whitelist.xsd">
+    <policies>
+        <policy id="script-src">
+            <values>
+                <!-- Econt.com -->
+                <value id="econt-script-src" type="host">*.econt.com</value>
+            </values>
+        </policy>
+        <policy id="style-src">
+            <values>
+                <!-- Econt.com -->
+                <value id="econt-style-src" type="host">*.econt.com</value>
+            </values>
+        </policy>
+        <policy id="img-src">
+            <values>
+                <!-- Econt.com -->
+                <value id="econt-img-src" type="host">*.econt.com</value>
+            </values>
+        </policy>
+        <policy id="connect-src">
+            <values>
+                <!-- Econt.com -->
+                <value id="econt-connect-src" type="host">*.econt.com</value>
+            </values>
+        </policy>
+        <policy id="font-src">
+            <values>
+                <!-- Econt.com -->
+                <value id="econt-font-src" type="host">*.econt.com</value>
+            </values>
+        </policy>
+        <policy id="frame-src">
+            <values>
+                <!-- Econt.com -->
+                <value id="econt-frame-src" type="host">*.econt.com</value>
+            </values>
+        </policy>
+    </policies>
+</csp_whitelist>
