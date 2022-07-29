@@ -41,6 +41,5 @@
         "psr-4": {
             "Oxl\\Delivery\\": ""
         }
-    },
-    "version": "1.0.1"
+    }
 }
