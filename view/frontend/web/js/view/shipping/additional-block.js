@@ -7,7 +7,7 @@ define([
 
     window.addEventListener('message', function (message) {
 
-        console.log('ekont message received', message);
+        //console.log('ekont message received', message);
 
         /**
          * check if this "message" comes from econt delivery system
