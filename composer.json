@@ -1,6 +1,7 @@
 {
     "name": "oxl/delivery",
     "description": " 'Deliver With Econt' implementation model",
+    "version": "999.0.0",
     "config": {
         "sort-packages": true
     },
