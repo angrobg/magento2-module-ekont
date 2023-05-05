@@ -77,12 +77,19 @@ class Shippingmodule extends AbstractCarrier implements CarrierInterface
             return false;
         }
 
-        $shippingCost = 0;
-        $payment_method = $this->_checkoutSession->getQuote()->getPayment()->getMethod();
+        // important - do this only when there is a quote_id otherwise an infinite loop is triggered:
+        // https://angrobg.sentry.io/issues/4150682499/?project=6597971&query=is%3Aunresolved&referrer=issue-stream&stream_index=2
+        $quoteId = $this->_checkoutSession->getQuoteId();
 
-        // NIMA CHANGES
-        if ($payment_method === 'cashondelivery') {
-            $shippingCost = $this->_checkoutSession->getEcontShippingPriceCod();
+        if ($quoteId) {
+            $payment_method = $this->_checkoutSession->getQuote()->getPayment()->getMethod();
+
+            // NIMA CHANGES
+            if ($payment_method === 'cashondelivery') {
+                $shippingCost = $this->_checkoutSession->getEcontShippingPriceCod();
+            } else {
+                $shippingCost = $this->_checkoutSession->getEcontShippingPrice();
+            }
         } else {
             $shippingCost = $this->_checkoutSession->getEcontShippingPrice();
         }
@@ -95,10 +102,7 @@ class Shippingmodule extends AbstractCarrier implements CarrierInterface
 //            $shippingCost = $this->_checkoutSession->getEcontShippingPrice();
 //        }
 
-        /** @var \Magento\Shipping\Model\Rate\Result $result */
         $result = $this->rateResultFactory->create();
-
-        /** @var \Magento\Quote\Model\Quote\Address\RateResult\Method $method */
         $method = $this->rateMethodFactory->create();
 
         $method->setCarrier($this->_code);

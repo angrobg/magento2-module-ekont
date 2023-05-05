@@ -196,7 +196,7 @@ define([
                     orderParams.customer_email = cdata.validatedEmailValue || ''
 
                     _.forEach(items, function (item) {
-                        orderParams.order_weight += item.weight
+                        orderParams.order_weight += (parseFloat(item.weight) * item.qty);
                     })
 
                     _.forEach(cdata.shippingAddressFromData.street, function (str, index) {
@@ -206,14 +206,11 @@ define([
                         orderParams.customer_address += str;
                     })
 
-                    _.forEach(items, (item, index) => {
-                        orderParams.order_weight += Number(item.weight)
-                    })
-
                     var iframeContainer = $('#place_iframe_here');
                     var self = this;
 
                     console.log('Ekont prepare iframe', {
+                        items: items,
                         cdata: cdata,
                         orderParams: orderParams
                     });
