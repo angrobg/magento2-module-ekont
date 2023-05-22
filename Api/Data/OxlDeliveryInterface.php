@@ -77,7 +77,7 @@ interface OxlDeliveryInterface
      * @param bool $key
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      */
-    public function setPrivateKey( $key );
+    public function setPrivateKey($key);
 
     /**
      * undocumented function summary
@@ -96,7 +96,7 @@ interface OxlDeliveryInterface
      *
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      **/
-    public function setEcontCustomerInfoUrl( $key );
+    public function setEcontCustomerInfoUrl($key);
 
     /**
      * undocumented function summary
@@ -111,12 +111,12 @@ interface OxlDeliveryInterface
      * undocumented function summary
      *
      * Undocumented function long description
-     * 
+     *
      * @param bool $key
-     * 
+     *
      * @return \Oxl\Delivery\Api\Data\OxlDeliveryInterface
      **/
-    public function setEcontShopId( $key );
+    public function setEcontShopId($key);
 
     /**
      * undocumented function summary
@@ -126,7 +126,7 @@ interface OxlDeliveryInterface
      * @param mixed $var
      * @return \Oxl\Delivery\Model\OxlDelivery
      **/
-    public function prepareModel( $var );
+    public function prepareModel($var);
 
     /**
      * undocumented function summary
@@ -136,5 +136,5 @@ interface OxlDeliveryInterface
      * @param mixed $var
      * @return \Oxl\Delivery\Model\OxlDelivery
      **/
-    public function setModel( $var );
+    public function setModel($var);
 }

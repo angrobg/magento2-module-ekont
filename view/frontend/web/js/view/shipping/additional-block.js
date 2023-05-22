@@ -17,6 +17,9 @@ define([
         }
 
         var data = message.data
+
+        console.log('ekontdelivery iframe msg', message.data);
+
         var modal = $('#econt-iframe-modal')
         var proceed = false;
         var content;
@@ -24,15 +27,20 @@ define([
         if (data.shipment_error) {
             content = data.shipment_error
         } else {
-            econtModalHelper.updateShippingAddress(data);
             proceed = true
-            content = $.mage.__('Цена на доставката: ')
-                + data['shipping_price'] + ' ' + data['shipping_price_currency_sign'];
 
-            if (econtModalHelper.isCODSelected()) {
-                content = content + " ( + " + econtModalHelper.shipping_price_cod + ' ' + data['shipping_price_currency_sign']
-                    + $.mage.__(' наложен платеж') + ').';
-            }
+            var isCod = econtModalHelper.isCODSelected()
+            var total = isCod ? data['shipping_price_cod'] : data['shipping_price'];
+
+            content = $.mage.__('Цена на доставката: ')
+                + Number((total).toFixed(2)) + ' ' + data['shipping_price_currency_sign'] +
+                (isCod ? ' ' + $.mage.__('(с наложен платеж)') : '');
+
+            // if (econtModalHelper.isCODSelected()) {
+            //     content = content + " ( + " + Number((econtModalHelper.shipping_price_cod).toFixed(2)) +
+            //         ' ' + data['shipping_price_currency_sign']
+            //         + $.mage.__('с наложен платеж') + ').';
+            // }
         }
 
         // NIMA CHANGES

@@ -15,6 +15,8 @@ class CreateOrder implements \Magento\Framework\Event\ObserverInterface
 
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
+        error_log('Ekont createOrder observer hit');
+
         $order = $observer->getEvent()->getOrder();
 
         $this->helper->sync_order($order);

@@ -6,16 +6,16 @@
 
 namespace Oxl\Delivery\Controller\Index;
 
+use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Framework\View\Result\PageFactory;
-use Magento\Framework\Controller\Result\ForwardFactory;
-use Magento\Framework\Exception\NotFoundException;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Controller\Result\ForwardFactory;
+use Magento\Framework\View\Result\PageFactory;
 
 /**
  * Contact index controller
  */
-class Index extends \Magento\Framework\App\Action\Action
+class Index extends Action
 {
     /**
      * @var PageFactory
@@ -28,44 +28,21 @@ class Index extends \Magento\Framework\App\Action\Action
     protected $resultForwardFactory;
 
     /**
-     * @var \Aion\Test\Helper\Data
-     */
-    protected $helper;
-
-    /**
      * Index constructor.
      *
      * @param \Magento\Framework\App\Action\Context $context
      * @param \Magento\Framework\View\Result\PageFactory $resultPageFactory
      * @param \Magento\Framework\Controller\Result\ForwardFactory $resultForwardFactory
-     * @param \Aion\Test\Helper\Data $helper
      */
     public function __construct(
         Context        $context,
         PageFactory    $resultPageFactory,
         ForwardFactory $resultForwardFactory
-        // \Aion\Test\Helper\Data $helper
     )
     {
         $this->resultPageFactory = $resultPageFactory;
         $this->resultForwardFactory = $resultForwardFactory;
-        // $this->helper = $helper;
         parent::__construct($context);
-    }
-
-    /**
-     * Dispatch request
-     *
-     * @param RequestInterface $request
-     * @return \Magento\Framework\App\ResponseInterface
-     * @throws \Magento\Framework\Exception\NotFoundException
-     */
-    public function dispatch(RequestInterface $request)
-    {
-        // if (!$this->helper->isEnabled()) {
-        //     throw new NotFoundException(__('Page not found.'));
-        // }
-        return parent::dispatch($request);
     }
 
     /**

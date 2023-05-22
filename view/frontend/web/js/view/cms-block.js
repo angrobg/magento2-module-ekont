@@ -4,6 +4,8 @@ define([
     'mage/storage',
     'mage/template',
     'Magento_Ui/js/modal/alert',
+    'Amasty_CheckoutStyleSwitcher/js/model/amalert',
+    'Magento_Checkout/js/checkout-data',
     'Magento_Ui/js/modal/modal',
     'Magento_Checkout/js/model/quote',
     'Magento_Customer/js/customer-data',
@@ -20,6 +22,8 @@ define([
     storage,
     template,
     alert,
+    amalert,
+    checkoutData,
     modal,
     quote,
     customerData,
@@ -32,9 +36,6 @@ define([
     setShippingInformationAction,
 ) {
     'use strict'
-
-    // NIMA CHANGES - we don't want to use a modal here
-    var useModal = false;
 
     // NIMA CHANGES
     // if (quote.shippingMethod() && quote.shippingMethod().carrier_code !== "econtdelivery") {
@@ -50,15 +51,26 @@ define([
                 shipping_data: {},
                 shipping_price_cod: null,
                 baseUrl: '',
+                econtData: {},
                 paymentMethod: null,
                 defaultPostCode: '1000',
                 iframeLoadedOnce: false,
                 carrier_code: 'econtdelivery',
                 shippingPriceCalculated: false,
+                shippingPriceNeedsRecalculation: true,
                 cashondelivery_pm_code: 'cashondelivery',
                 selected_carrier_code: '',
+                calculationInProgress: false,
+                lastSubtotal: quote.totals._latestValue.subtotal,
+                lastEkontMessageData: null,
                 initialize: function () {
-                    this.baseUrl = config.AjaxUrl;
+                    this.baseUrl = config.ajaxUrl;
+                    this.econtData = config.econtData;
+
+                    console.log('econt init', {
+                        baseUrl: this.baseUrl,
+                        data: this.econtData
+                    })
 
                     var self = this;
 
@@ -70,13 +82,19 @@ define([
                         if (method) {
                             this.paymentMethod = method.method;
                         }
-                        console.log('Payment method changed (ekont)', this.paymentMethod);
 
-                        self.updateTotals(method);
+                        if (self.isCarrierSelected()) {
+                            console.log('Payment method changed (ekont)', this.paymentMethod);
 
-                        // if (shouldUpdatePaymentstate) {
-                        //     self.updatePaymentDataState(true);
-                        // }
+                            // self.shippingPriceNeedsRecalculation = true;
+
+                            self.updateTotals(method);
+
+                            // if (shouldUpdatePaymentstate) {
+                            //     self.updatePaymentDataState(true);
+                            // }
+                        }
+
                     }, this);
 
                     // NIMA CHANGES
@@ -96,6 +114,37 @@ define([
                         //     sidebarModel.hide();
                         // }
                     })
+
+                    // NIMA CHANGES
+                    // reload the iframe when the customer data changes in case it was never calculated previously
+                    // to autofill the customer data in the ekont form
+                    quote.shippingAddress.subscribe(function (val) {
+                        if (self.isCarrierSelected() && self.iframeLoadedOnce && !self.shippingPriceCalculated) {
+                            console.log('ekontdelivery shippingAddressChangedHandler', val);
+
+                            self.loadModal();
+                            self.toggleCalculateshippingButton();
+                        }
+                    })
+
+                    // NIMA CHANGES
+                    quote.totals.subscribe(function (val) {
+                        if (self.isCarrierSelected() && self.iframeLoadedOnce && self.lastSubtotal !== val['subtotal']) {
+                            console.log('ekontdelivery totalsChangedHandler (shippingPriceNeedsRecalculation set)', val);
+
+                            // self.shippingPriceCalculated = false;
+                            // self.shippingPriceNeedsRecalculation = true;
+                            self.lastSubtotal = val['subtotal'];
+
+                            self.loadModal();
+                            self.toggleCalculateshippingButton();
+
+                            $(document).trigger('oxl-econt-shipping-cost-selected', {
+                                isValid: false,
+                                needsRecalculation: true
+                            });
+                        }
+                    })
                 },
                 isCODSelected: function () {
                     return this.paymentMethod === this.cashondelivery_pm_code;
@@ -114,6 +163,9 @@ define([
                     setTimeout(function () {
                         self.loadModal();
                     }, 800)
+                },
+                needsPriceRecalculation: function () {
+                    return this.shippingPriceNeedsRecalculation;
                 },
                 isShippingPriceCalculated: function () {
                     return this.shippingPriceCalculated;
@@ -137,77 +189,133 @@ define([
                     }
 
                     // if (quote.shippingMethod().carrier_code !== 'econtdelivery') return;
-                    var data;
-                    var footer;
+                    // var data;
+                    // var footer;
                     let cdata
                     cdata = customerData.get('checkout-data')();
 
-                    if (!this.checkCustomerData(cdata)) {
-                        this.showAlert($.mage.__('Моля попълнете всички задължителни полета!'));
-                        return
-                    }
+                    // if (!this.checkCustomerData(cdata)) {
+                    //     this.showAlert($.mage.__('Моля попълнете всички задължителни полета!'));
+                    //     return
+                    // }
 
-                    if (useModal) {
-                        var iframeModalContainer = $('#econt-iframe-modal');
-
-                        data = {
-                            'type': "popup",
-                            'title': $.mage.__('Доставка с Еконт'),
-                            'responsive': true,
-                            'showLoader': true,
-                            // 'buttons': [{
-                            //     text: jQuery.mage.__('Submit'),
-                            //     class: 'action'
-                            // }],
-                            opened: false
-                        }
-
-                        // NIMA CHANGES
-                        this.prepareIframe(this.baseUrl, cdata);
-
-                        iframeModalContainer.modal(data);
-                        iframeModalContainer.modal('openModal');
-                        footer = $('.modal-footer')
-                        footer.css('display', 'none');
-                    } else {
-                        this.prepareIframe(this.baseUrl, cdata);
-                    }
+                    this.prepareIframe(this.baseUrl, cdata);
                 },
                 prepareIframe: function (url, cdata) {
                     var iframe;
                     var orderParams = {};
                     var items = quote.getItems();
 
-                    orderParams.order_total = checkoutConfig.totalsData.subtotal_with_discount
+                    console.log('ekontdelivery ch', checkoutConfig);
+                    console.log('ekontdelivery quote', quote);
+                    console.log('ekontdelivery items', items);
+
+                    orderParams.order_total = quote.totals._latestValue.subtotal //checkoutConfig.totalsData.subtotal_with_discount
                     orderParams.order_currency = checkoutConfig.totalsData.quote_currency_code
-                    orderParams.customer_name = ((cdata.shippingAddressFromData.firstname || '') + ' ' +
-                        (cdata.shippingAddressFromData.lastname || '')).trim()
-                    orderParams.customer_company = cdata.shippingAddressFromData.company || ''
-                    orderParams.customer_address = ''
                     orderParams.order_weight = 0
-                    orderParams.customer_city_name = cdata.shippingAddressFromData.city || ''
-
-                    orderParams.customer_post_code = cdata.shippingAddressFromData.postcode || ''
-                    orderParams.customer_post_code = (orderParams.customer_post_code === '-' ||
-                    !orderParams.customer_post_code ? this.defaultPostCode : orderParams.customer_post_code);
-
-                    orderParams.customer_phone = cdata.shippingAddressFromData.telephone || ''
                     orderParams.ignore_history = 1
-                    orderParams.customer_email = cdata.validatedEmailValue || ''
+                    orderParams.confirm_txt = 'Изчисли цената'
 
                     _.forEach(items, function (item) {
-                        orderParams.order_weight += (parseFloat(item.weight) * item.qty);
+                        console.log('ekontdelivery item', item);
+
+                        // find the totals item to obtain the quantity as the one from quote always stays with the initial value (even after being updated on the UI - may be a bug!)
+                        var foundItem = null;
+
+                        _.forEach(quote.totals._latestValue.items || [], function (xitem) {
+                            console.log('ekontdelivery xitem', xitem);
+                            if (xitem.item_id === parseInt(item.item_id)) {
+                                foundItem = xitem;
+                                return false;
+                            }
+                        });
+
+                        if (foundItem) {
+                            console.log('ekontdelivery foundItem', foundItem);
+                            orderParams.order_weight += (parseFloat(item.weight) * foundItem.qty);
+                        }
                     })
 
-                    _.forEach(cdata.shippingAddressFromData.street, function (str, index) {
-                        if (index > 0 && str.length > 0 && index <= (_.size(cdata.shippingAddressFromData.street) - 1)) {
-                            orderParams.customer_address += ', ';
+                    console.log('ekontdelivery lastOrderParams', this.lastOrderParams);
+
+                    // reuse the previously saved values as they tend to get lost
+                    if (this.econtData !== null) {
+                        orderParams.customer_name = this.econtData.name || ''
+                        orderParams.customer_company = this.econtData.face || ''
+                        orderParams.customer_phone = this.econtData.phone || ''
+                        orderParams.customer_email = this.econtData.email || ''
+                        orderParams.customer_post_code = this.econtData.post_code || ''
+                        orderParams.customer_city_name = this.econtData.city_name || ''
+                        orderParams.customer_address = this.econtData.address || ''
+                        orderParams.customer_office_code = this.econtData.office_code || ''
+                    } else if (this.lastEkontMessageData !== null) {
+                        orderParams.customer_name = this.lastEkontMessageData.name || ''
+                        orderParams.customer_company = this.lastEkontMessageData.face || ''
+                        orderParams.customer_phone = this.lastEkontMessageData.phone || ''
+                        orderParams.customer_email = this.lastEkontMessageData.email || ''
+                        orderParams.customer_post_code = this.lastEkontMessageData.post_code || ''
+                        orderParams.customer_city_name = this.lastEkontMessageData.city_name || ''
+                        orderParams.customer_address = this.lastEkontMessageData.address || ''
+                        orderParams.customer_office_code = this.lastEkontMessageData.office_code || ''
+                    } else {
+                        orderParams.customer_name = ''
+                        orderParams.customer_company = ''
+                        orderParams.customer_phone = ''
+                        orderParams.customer_email = ''
+                        orderParams.customer_post_code = ''
+                        orderParams.customer_city_name = ''
+                        orderParams.customer_address = ''
+                        orderParams.customer_office_code = ''
+                    }
+
+                    orderParams.customer_name = orderParams.customer_name.length ?
+                        orderParams.customer_name.length :
+                        ((cdata.shippingAddressFromData.firstname || '') + ' ' +
+                            (cdata.shippingAddressFromData.lastname || '')).trim()
+
+                    orderParams.customer_company = orderParams.customer_company.length ?
+                        orderParams.customer_company :
+                        (cdata.shippingAddressFromData.company || '')
+
+                    orderParams.customer_phone = orderParams.customer_phone.length ?
+                        orderParams.customer_phone :
+                        (cdata.shippingAddressFromData.telephone || '')
+
+                    orderParams.customer_email = orderParams.customer_email.length ?
+                        orderParams.customer_email :
+                        (cdata.validatedEmailValue || '')
+
+                    // pass the following info only if it is full - otherwise Ekont shows a stupid mistake
+                    if ((cdata.shippingAddressFromData.city || '').length &&
+                        (orderParams.customer_post_code === '-' ||
+                        !orderParams.customer_post_code ? this.defaultPostCode : orderParams.customer_post_code).length &&
+                        cdata.shippingAddressFromData.street.length
+                    ) {
+                        orderParams.customer_city_name = orderParams.customer_city_name.length ?
+                            orderParams.customer_city_name :
+                            (cdata.shippingAddressFromData.city || '')
+
+                        if (!orderParams.customer_post_code.length) {
+                            orderParams.customer_post_code = cdata.shippingAddressFromData.postcode || ''
+                            orderParams.customer_post_code = (orderParams.customer_post_code === '-' ||
+                            !orderParams.customer_post_code ? this.defaultPostCode : orderParams.customer_post_code);
                         }
-                        orderParams.customer_address += str;
-                    })
+
+                        if (!orderParams.customer_address.length) {
+                            orderParams.customer_address = ''
+                            _.forEach(cdata.shippingAddressFromData.street, function (str, index) {
+                                if (index > 0 && str.length > 0 && index <= (_.size(cdata.shippingAddressFromData.street) - 1)) {
+                                    orderParams.customer_address += ', ';
+                                }
+                                orderParams.customer_address += str;
+                            })
+                        }
+                    }
 
                     var iframeContainer = $('#place_iframe_here');
                     var self = this;
+
+                    this.lastOrderParams = orderParams;
 
                     console.log('Ekont prepare iframe', {
                         items: items,
@@ -236,26 +344,65 @@ define([
                         self.iframeLoadedOnce = false;
                     });
                 },
-                storeSessionPriceData: function (data) {
+                storeSessionPriceData: function (data, callbackSuccess, callbackFail) {
+                    if (this.calculationInProgress) {
+                        return;
+                    }
+
+                    var me = this
+                    this.calculationInProgress = true
+
                     storage.post(
                         this.baseUrl + 'rest/V1/econt/delivery/set-payment-data',
                         JSON.stringify({
                             econt_id: data.id,
                             shipping_price: data.shipping_price,
-                            shipping_price_cod: data.shipping_price_cod
+                            shipping_price_cod: data.shipping_price_cod,
+                            // NIMA CHANGES START - pass additional fields
+                            address: data.address || '',
+                            city_name: data.city_name || '',
+                            country_code: data.country_code || '',
+                            country_name: data.country_name || '',
+                            email: data.email || '',
+                            face: data.face || '',
+                            id_country: data.id_country || null,
+                            name: data.name || '',
+                            num: data.num || '',
+                            office_code: data.office_code || '',
+                            office_name: data.office_name || '',
+                            office_name_only: data.office_name_only || '',
+                            other: data.other || '',
+                            phone: data.phone || '',
+                            post_code: data.post_code || '',
+                            quarter: data.quarter || '',
+                            shipping_price_currency: data.shipping_price_currency || '',
+                            shipping_price_currency_sign: data.shipping_price_currency_sign || '',
+                            street: data.street || '',
+                            zip: data.zip || ''
+                            // NIMA CHANGES END
                         }),
                         false
                     ).done(function (result) {
                         console.log('storeSessionPriceData completed', result);
+
+                        me.calculationInProgress = false
+
+                        if (callbackSuccess !== undefined) {
+                            callbackSuccess(result);
+                        }
                     }).fail(function (response) {
                         console.log('storeSessionPriceData error', response);
+
+                        me.calculationInProgress = false
+
+                        if (callbackFail !== undefined) {
+                            callbackFail(response);
+                        }
                     })
                 },
-                updateShippingAddress: function (data) {
-                    console.log('updateShippingAddress', data);
+                updateShippingAddress: function () {
 
-                    this.shipping_price_cod = Math.round((data['shipping_price_cod'] - data['shipping_price']) * 100) / 100;
-                    this.shipping_data = data
+                    var data = this.shipping_data;
 
                     var full_name = [];
                     var company = '';
@@ -288,9 +435,24 @@ define([
                             quote.billingAddress().company = company;
                     }
 
-                    quote.shippingAddress().street[0] = data['address'] !== '' ? data['address'] : data['office_name'];
-                    if (updateBilling)
-                        quote.billingAddress().street[0] = data['address'] !== '' ? data['address'] : data['office_name'];
+                    var addrLine = data['address'] !== '' ? data['address'] : data['office_name'];
+
+                    quote.shippingAddress().street.splice(0, quote.shippingAddress().street.length);
+                    quote.shippingAddress().street.push(addrLine);
+
+                    // quote.shippingAddress().street[0] = data['address'] !== '' ? data['address'] : data['office_name'];
+
+                    if (updateBilling) {
+                        quote.billingAddress().street.splice(0, quote.billingAddress().street.length);
+                        quote.billingAddress().street.push(addrLine);
+                        // quote.billingAddress().street[0] = data['address'] !== '' ? data['address'] : data['office_name'];
+                    }
+
+                    console.log('ekont :: updateShippingAddress address line', {
+                        addrLine: addrLine,
+                        shippingStreet: quote.shippingAddress().street,
+                        billingStreet: quote.billingAddress().street
+                    });
 
                     if (quote.shippingAddress().telephone !== data['phone']) {
                         quote.shippingAddress().telephone = data['phone'];
@@ -313,31 +475,38 @@ define([
                     if (quote.guestEmail !== data['email']) {
                         quote.guestEmail = data['email'];
                     }
-                },
-                updateShippingPrice: function (data) {
-                    this.shipping_data = data;
-                    this.updatePaymentDataState();
+
+                    console.log('ekont :: updateShippingAddress', {
+                        data: data,
+                        quote: quote
+                    });
+
+                    checkoutData.setNewCustomerShippingAddress(quote.shippingAddress());
+                    checkoutData.setNewCustomerBillingAddress(quote.billingAddress());
                 },
                 updatePaymentDataState: function (silent) {
                     // console.log('updatePaymentDataState');
 
-                    console.log('ekont :: requestShippingEstimate / updatePaymentDataState');
+                    console.log('ekont :: updatePaymentDataState');
 
-                    var self = this;
                     silent = silent || false;
                     var shipping_data = this.shipping_data;
 
-                    if (Object.keys(shipping_data).length === 0) {
-                        return;
-                    }
+                    // if (Object.keys(shipping_data).length === 0) {
+                    //     return;
+                    // }
+                    //
 
                     console.log('updatePaymentDataState data', {
                         shipping_data: shipping_data,
                         isCod: this.isCODSelected()
                     })
 
-                    var priceDataField = this.isCODSelected() ? 'shipping_price_cod' : 'shipping_price';
-                    var priceData = shipping_data[priceDataField] || 0;
+                    // var priceDataField = this.isCODSelected() ? 'shipping_price_cod' : 'shipping_price';
+                    // var priceData = shipping_data[priceDataField] || 0;
+
+                    var priceData = this.isCODSelected() ? this.shipping_price_cod :
+                        this.shipping_price;
 
                     console.log('updatePaymentDataState price', priceData);
 
@@ -366,7 +535,8 @@ define([
                         });
                         rateRegistry.set(address.getKey(), r);
                         shippingService.setShippingRates(r);
-                        _that.updateQuoteShippingTotals(priceData);
+                        // _that.updateQuoteShippingTotals(priceData);
+                        _that.updateTotals(priceData);
                     }).fail(function (response) {
                         shippingService.setShippingRates([]);
                         errorProcessor.process(response);
@@ -376,29 +546,54 @@ define([
                         }
                     });
                 },
-                updateTotals: function (data) {
-                    var totals = quote.getTotals()();
-                    if (Object.keys(this.shipping_data).length === 0) return;
-                    if (quote.shippingMethod() && quote.shippingMethod().carrier_code !== "econtdelivery") return;
+                updateTotals: function (priceData) {
+                    // var totals = quote.getTotals()();
+                    var shippingAmount = this.isCODSelected() ? this.shipping_price_cod :
+                        this.shipping_price;
 
-                    if (this.shipping_price_cod === null) {
-                        setTimeout(function () {
-                            stepNavigator.navigateTo('shipping', 'opc-shipping_method');
-                            sidebarModel.hide();
-                        }, 1000)
+                    if (!shippingAmount) {
+                        console.log('updateTotals EKONT - no price, skipping!');
+                        return;
                     }
 
-                    if (data.method === this.cashondelivery_pm_code) {
-                        if (totals.base_shipping_incl_tax < this.shipping_data.shipping_price_cod)
-                            this.updateQuoteShippingTotals(this.shipping_price_cod, true);
-                    } else {
-                        if (totals.base_shipping_incl_tax > this.shipping_data.shipping_price) {
-                            this.updateQuoteShippingTotals(this.shipping_price_cod, false, true);
-                        }
+                    if (priceData !== undefined) {
+                        shippingAmount = priceData;
                     }
+
+                    console.log('updateTotals EKONT', shippingAmount);
+
+                    // if (this.shipping_price_cod === null) {
+                    //     setTimeout(function () {
+                    //         stepNavigator.navigateTo('shipping', 'opc-shipping_method');
+                    //         sidebarModel.hide();
+                    //     }, 1000)
+                    // }
+
+                    this.updateQuoteShippingTotals(shippingAmount, false, false);
+
+                    // if (this.isCODSelected()) {
+                    //     console.log('AAAAA');
+                    //     if (totals.base_shipping_incl_tax < this.shipping_data.shipping_price_cod) {
+                    //         this.updateQuoteShippingTotals(this.shipping_price_cod, true);
+                    //     }
+                    // } else {
+                    //     console.log('BBBBB');
+                    //     if (totals.base_shipping_incl_tax > this.shipping_data.shipping_price) {
+                    //         this.updateQuoteShippingTotals(this.shipping_price_cod, false, true);
+                    //     }
+                    // }
                 },
                 updateQuoteShippingTotals: function (data, add_cod = false, sub_cod = false) {
+                    console.log('updateQuoteShippingTotals', {
+                        data: data,
+                        add_cod: add_cod,
+                        sub_cod: sub_cod
+                    })
+
                     var t = quote.getTotals()();
+
+                    console.log('updateQuoteShippingTotals QUOTE BEFORE', t);
+
                     var shipping_fields = [
                         'base_shipping_amount',
                         'base_shipping_incl_tax',
@@ -453,35 +648,47 @@ define([
                             else if (sub_cod)
                                 segment.value -= data;
                             else
-                                segment.value = t.grand_total + data;
+                                segment.value = t.grand_total /*+ data;*/;
                         }
 
                         return segment;
                     });
 
+                    console.log('RECALC QUOTE SEGMENTS (EKONT)', t)
+
                     quote.setTotals(t);
                 },
                 showAlert: function (content, data = null, proceed = false, modal = null) {
                     var _that = this;
-                    alert({
+                    amalert({
                         title: $.mage.__('Доставка с Еконт'),
                         content: content,
                         actions: {
                             always: function () {
                                 if (proceed && data) {
-                                    _that.updateShippingPrice(data);
-                                    // $('#place_iframe_here').empty();
-                                    _that.storeSessionPriceData(data);
-                                    _that.shippingPriceCalculated = true;
+                                    _that.storeSessionPriceData(data, function () {
+                                        _that.lastEkontMessageData = data;
+                                        _that.shipping_data = data;
+                                        _that.shipping_price_cod = data['shipping_price_cod'];
+                                        // _that.shipping_price_cod = Math.round((data['shipping_price_cod'] - data['shipping_price']) * 100) / 100;
+                                        _that.shipping_price = data['shipping_price'];
 
-                                    $(document).trigger('oxl-econt-shipping-cost-selected', {
-                                        isValid: _that.shippingPriceCalculated
+                                        // $('#place_iframe_here').empty();
+                                        _that.shippingPriceCalculated = true;
+                                        _that.shippingPriceNeedsRecalculation = false;
+
+                                        $(document).trigger('oxl-econt-shipping-cost-selected', {
+                                            isValid: _that.shippingPriceCalculated,
+                                            needsRecalculation: _that.shippingPriceNeedsRecalculation
+                                        });
+
+                                        _that.updateShippingAddress();
+                                        _that.updatePaymentDataState();
                                     });
-
-                                } else {
+                                }/* else {
                                     if (modal)
                                         modal.modal('toggleModal');
-                                }
+                                }*/
                             }
                         }
                     });

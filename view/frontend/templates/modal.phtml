@@ -7,16 +7,17 @@
 
 <?php
 $ajaxurl = $block->getAjaxUrl();
+$econtData = $block->getEcontData();
 ?>
 <script type="text/x-magento-init">
     {
         "*": {
             "Oxl_Delivery/js/view/cms-block": {
-                "AjaxUrl": "<?php echo $ajaxurl; ?>"
+                "ajaxUrl": "<?php echo $ajaxurl; ?>",
+                "econtData": <?php echo json_encode($econtData); ?>
             }
         }
     }
-
 </script>
 
 <style>

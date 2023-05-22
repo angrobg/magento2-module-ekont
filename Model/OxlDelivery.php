@@ -129,6 +129,11 @@ class OxlDelivery implements OxlDeliveryInterface
             $this->customer_info_url = ($this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL) . 'customer_info.php?';
     }
 
+    public function setCustomerInfoUrl($url)
+    {
+        $this->customer_info_url = $url;
+    }
+
     /**
      * undocumented function summary
      *
