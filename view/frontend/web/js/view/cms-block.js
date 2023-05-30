@@ -428,7 +428,8 @@ define([
                     var company = '';
                     var updateBilling;
 
-                    updateBilling = quote.billingAddress() !== null;
+                    // updateBilling = quote.billingAddress() !== null;
+                    updateBilling = false;
 
                     if (data['face']) {
                         full_name = data['face'].split(' ');
