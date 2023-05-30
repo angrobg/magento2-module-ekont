@@ -103,7 +103,8 @@ define([
                             self.selected_carrier_code = val.carrier_code;
 
                             if (self.isCarrierSelected()) {
-                                console.log('ekontdelivery selected');
+                                console.log('ekontdelivery :: selected', val);
+                                // self.updateShippingAddress();
                                 self.loadIFrameOnce();
                             }
                             self.toggleCalculateshippingButton();
@@ -145,6 +146,14 @@ define([
                             });
                         }
                     })
+
+                    // NIMA CHANGES
+                    // update the shipping address before changing it to the current one
+                    $(document).on('checkout-before-select-shipping-method', function (e, data) {
+                        if (data.method.carrier_code === self.carrier_code) {
+                            self.updateShippingAddress();
+                        }
+                    });
                 },
                 isCODSelected: function () {
                     return this.paymentMethod === this.cashondelivery_pm_code;
@@ -402,7 +411,18 @@ define([
                 },
                 updateShippingAddress: function () {
 
+                    console.log('ekontdelivery :: updateShippingAddress');
+
                     var data = this.shipping_data;
+
+                    data['face'] = data['face'] || '';
+                    data['name'] = data['name'] || '';
+                    data['address'] = data['address'] || '';
+                    data['office_name'] = data['office_name'] || '';
+                    data['phone'] = data['phone'] || '';
+                    data['post_code'] = data['post_code'] || '';
+                    data['city_name'] = data['city_name'] || '';
+                    data['email'] = data['email'] || '';
 
                     var full_name = [];
                     var company = '';
@@ -410,11 +430,11 @@ define([
 
                     updateBilling = quote.billingAddress() !== null;
 
-                    if (data['face'] != null) {
+                    if (data['face']) {
                         full_name = data['face'].split(' ');
                         company = data['name'];
                     } else {
-                        full_name = data['name'].split(' ');
+                        full_name = data['name'] || ''.split(' ');
                     }
 
                     if (quote.shippingAddress().firstname !== full_name[0]) {
@@ -481,8 +501,10 @@ define([
                         quote: quote
                     });
 
+                    console.log('ekont :: updateShippingAddress', quote.shippingAddress());
+
                     checkoutData.setNewCustomerShippingAddress(quote.shippingAddress());
-                    checkoutData.setNewCustomerBillingAddress(quote.billingAddress());
+                    // checkoutData.setNewCustomerBillingAddress(quote.billingAddress());
                 },
                 updatePaymentDataState: function (silent) {
                     // console.log('updatePaymentDataState');

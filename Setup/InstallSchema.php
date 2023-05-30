@@ -73,6 +73,26 @@ class InstallSchema implements InstallSchemaInterface
                         'nullable' => false,
                     ]
                 )
+                ->addColumn(
+                    'request',
+                    Table::TYPE_TEXT,
+                    null,
+                    [
+                        'nullable' => false,
+                    ]
+                )
+                ->addColumn(
+                    'error',
+                    Table::TYPE_TEXT,
+                    null,
+                    [
+                        'nullable' => true,
+                    ]
+                )
+                ->addColumn(
+                    'is_successful',
+                    Table::TYPE_BOOLEAN,
+                )
                 ->addIndex(
                     $installer->getIdxName(
                         $oxlEkontOrderTableName,

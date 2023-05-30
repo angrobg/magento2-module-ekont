@@ -61,6 +61,36 @@ class Order extends AbstractModel implements OrderInterface
     }
 
     /**
+     * Get request
+     *
+     * @return string
+     */
+    public function getRequest()
+    {
+        return $this->getData(self::REQUEST);
+    }
+
+    /**
+     * Get error
+     *
+     * @return string
+     */
+    public function getError()
+    {
+        return $this->getData(self::ERROR);
+    }
+
+    /**
+     * Get is successful
+     *
+     * @return bool
+     */
+    public function getIsSuccessful()
+    {
+        return $this->getData(self::IS_SUCCESSFUL);
+    }
+
+    /**
      * Set ID
      *
      * @param int $id
@@ -104,5 +134,38 @@ class Order extends AbstractModel implements OrderInterface
     public function setDateCreated($dateCreated)
     {
         return $this->setData(self::DATE_CREATED, $dateCreated);
+    }
+
+    /**
+     * Set request
+     *
+     * @param string $data
+     * @return \Oxl\Delivery\Api\Data\OrderInterface
+     */
+    public function setRequest($data)
+    {
+        return $this->setData(self::REQUEST, $data);
+    }
+
+    /**
+     * Set error
+     *
+     * @param string $data
+     * @return \Oxl\Delivery\Api\Data\OrderInterface
+     */
+    public function setError($data)
+    {
+        return $this->setData(self::ERROR, $data);
+    }
+
+    /**
+     * Set is successful
+     *
+     * @param bool $data
+     * @return \Oxl\Delivery\Api\Data\OrderInterface
+     */
+    public function setIsSuccessful($data)
+    {
+        return $this->setData(self::IS_SUCCESSFUL, $data);
     }
 }

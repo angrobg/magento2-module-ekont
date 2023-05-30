@@ -19,6 +19,6 @@ class CreateOrder implements \Magento\Framework\Event\ObserverInterface
 
         $order = $observer->getEvent()->getOrder();
 
-        $this->helper->sync_order($order);
+        $this->helper->syncOrder($order);
     }
 }

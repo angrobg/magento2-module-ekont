@@ -22,6 +22,9 @@ interface OrderInterface
     const ORDER_ID = 'order_id';
     const DATA = 'data';
     const DATE_CREATED = 'date_created';
+    const REQUEST = 'request';
+    const ERROR = 'error';
+    const IS_SUCCESSFUL = 'is_successful';
 
     /**#@-*/
 
@@ -59,6 +62,27 @@ interface OrderInterface
      * @return string
      */
     public function getDateCreated();
+
+    /**
+     * Get request
+     *
+     * @return string
+     */
+    public function getRequest();
+
+    /**
+     * Get error
+     *
+     * @return string
+     */
+    public function getError();
+
+    /**
+     * Get is successful
+     *
+     * @return bool
+     */
+    public function getIsSuccessful();
 
     /**
      * Set ID
@@ -99,4 +123,29 @@ interface OrderInterface
      * @return \Oxl\Delivery\Api\Data\OrderInterface
      */
     public function setDateCreated($dateCreated);
+
+    /**
+     * Set request
+     *
+     * @param string $data
+     * @return \Oxl\Delivery\Api\Data\OrderInterface
+     */
+    public function setRequest($data);
+
+    /**
+     * Set error
+     *
+     * @param string $data
+     * @return \Oxl\Delivery\Api\Data\OrderInterface
+     */
+    public function setError($data);
+
+    /**
+     * Set is successful
+     *
+     * @param bool $data
+     * @return \Oxl\Delivery\Api\Data\OrderInterface
+     */
+    public function setIsSuccessful($data);
+
 }

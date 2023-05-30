@@ -42,7 +42,7 @@ class OxlDeliveryManagement implements OxlDeliveryManagementInterface
     public function getApiData(int $id)
     {
         try {
-            $this->order->sync_order(1);
+            $this->order->syncOrder($id);
 
             // return $model;
         } catch (\Magento\Framework\Exception\LocalizedException $e) {

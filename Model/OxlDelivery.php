@@ -2,9 +2,9 @@
 
 namespace Oxl\Delivery\Model;
 
-use \Oxl\Delivery\Api\Data\OxlDeliveryInterface;
-use \Oxl\Delivery\Helper\DataFactory;
-use \Magento\Checkout\Model\Session;
+use Magento\Checkout\Model\Session;
+use Oxl\Delivery\Api\Data\OxlDeliveryInterface;
+use Oxl\Delivery\Helper\DataFactory;
 
 /**
  * Marketplace Product Model.
@@ -16,6 +16,8 @@ class OxlDelivery implements OxlDeliveryInterface
 {
     const REAL_URL = 'https://delivery.econt.com/';
     const DEMO_URL = 'http://delivery.demo.econt.com/';
+
+    const TEST_PRIVATE_KEY = 'test@test.com';
 
     protected $helper;
 
@@ -115,6 +117,15 @@ class OxlDelivery implements OxlDeliveryInterface
             return $this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL;
 
         return $this->customer_info_url;
+    }
+
+    public function getPrivateKeyForOrder()
+    {
+        if ($this->helper->is_demo()) {
+            return self::TEST_PRIVATE_KEY;
+        } else {
+            return $this->getPrivateKey();
+        }
     }
 
     /**

@@ -13,7 +13,9 @@ use Oxl\Delivery\Model\OxlDelivery;
 use Oxl\Delivery\Model\OxlDeliveryFactory;
 use Sentry\EventHint;
 use Sentry\Severity;
+use Sentry\State\Scope;
 use function Sentry\captureMessage;
+use function Sentry\configureScope;
 
 class Order extends AbstractHelper
 {
@@ -59,7 +61,7 @@ class Order extends AbstractHelper
         parent::__construct($context);
     }
 
-    public function sync_order($order = null, $get_new_price = false)
+    public function syncOrder($order = null, $get_new_price = false)
     {
         if ($order === null) {
             error_log('Ekont sync_order: NO ORDER - DOING NOTHING');
@@ -142,39 +144,77 @@ class Order extends AbstractHelper
 
         error_log('Ekont sync_order: request: ' . json_encode($data));
 
+        // log
+        $ekontOrder = $this->ekontOrderFactory->create();
+        $ekontOrder
+            ->setDataColumn(json_encode(null))
+            ->setRequest(json_encode($data))
+            ->setDateCreated('now')
+            ->setOrderId($order->getId());
+        $this->ekontOrderRepository->save($ekontOrder);
+
         $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, /*$this->_oxlDeliveryFactory->getEcontCustomerInfoUrl()*/ 'https://delivery.econt.com/' . 'services/OrdersService.updateOrder.json');
+
+        $url = $this->_oxlDeliveryFactory->getEcontCustomerInfoUrl() .
+            'services/OrdersService.updateOrder.json';
+
+        // prod url for testing:
+        // $url = 'https://delivery.econt.com/services/OrdersService.updateOrder.json';
+
+        curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
-            'Authorization: ' . $this->_oxlDeliveryFactory->getPrivateKey(),
+            'Authorization: ' . $this->_oxlDeliveryFactory->getPrivateKeyForOrder(),
         ]);
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($curl, CURLOPT_TIMEOUT, 10);
 
         $response = curl_exec($curl);
-        $parsed_error = json_decode($response, true);
+        $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($curl);
+        $curl_error_no = curl_errno($curl);
 
-        error_log('Ekont sync_order: response: ' . print_r($response, true) . "\n\nParsed: " . print_r($parsed_error, true));
+        $parsed_error = json_decode($response, true);
+        $is_successful = $http_status == 200 && !array_key_exists('type', $parsed_error);
+
+        error_log('Ekont sync_order: response: ' . print_r($response, true) .
+            "\n\nParsed: " . print_r($parsed_error, true));
 
         // store the resutls
-        $ekontOrder = $this->ekontOrderFactory->create();
         $ekontOrder
-            ->setDataColumn(serialize($response))
-            ->setDateCreated('now')
-            ->setOrderId($order->getId());
+            ->setDataColumn(json_encode([
+                'url' => $url,
+                'response' => $response,
+            ]))
+            ->setError(json_encode([
+                'parsedError' => $parsed_error,
+                'httpStatus' => $http_status,
+                'curlError' => $curl_error,
+                'curlErrorNo' => $curl_error_no,
+            ]))
+            ->setIsSuccessful($is_successful);
         $this->ekontOrderRepository->save($ekontOrder);
 
         /** @noinspection PhpUndefinedMethodInspection */
         $this->_checkoutSession->unsEcontData();
 
-        if (array_key_exists('type', $parsed_error)) {
-            error_log('Ekont sync_order: response ERROR FOUND');
+        if (!$is_successful) {
+            error_log('Ekont sync_order: response ERROR FOUND: ' . print_r($parsed_error, true));
 
-            $this->_messageManager->addErrorMessage($parsed_error['message']);
+//            $this->_messageManager->addErrorMessage($parsed_error['message']);
+
+            configureScope(function (Scope $scope) use ($order, $data, $response, $parsed_error): void {
+                $scope->setContext('Ekont Submission', [
+                    'orderId' => $order->getIncrementId(),
+                    'request' => $data,
+                    'response' => $response,
+                    'parsedError' => $parsed_error,
+                ]);
+            });
 
             captureMessage('Ekont order submission error (#' . $order->getIncrementId() . ')',
                 Severity::warning(),
@@ -188,5 +228,7 @@ class Order extends AbstractHelper
 
             return false;
         }
+
+        return true;
     }
 }
