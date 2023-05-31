@@ -1,0 +1,21 @@
+#econt-iframe-container {
+    padding-top: 25px;
+}
+
+#econt-iframe-modal .fieldset {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+#econt-iframe-modal .fieldset .legend {
+    margin: 0;
+}
+
+#econt-iframe-container > iframe {
+    width: 100%;
+    border: none;
+    min-height: 810px;
+    height: 810px;
+    overflow: hidden
+}

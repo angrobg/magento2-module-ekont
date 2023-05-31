@@ -114,14 +114,14 @@ class OxlDelivery implements OxlDeliveryInterface
     public function getEcontCustomerInfoUrl()
     {
         if ($this->customer_info_url === null)
-            return $this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL;
+            return $this->helper->isDemo() ? self::DEMO_URL : self::REAL_URL;
 
         return $this->customer_info_url;
     }
 
     public function getPrivateKeyForOrder()
     {
-        if ($this->helper->is_demo()) {
+        if ($this->helper->isDemo()) {
             return self::TEST_PRIVATE_KEY;
         } else {
             return $this->getPrivateKey();
@@ -137,7 +137,7 @@ class OxlDelivery implements OxlDeliveryInterface
     public function setEcontCustomerInfoUrl($key)
     {
         if ($key)
-            $this->customer_info_url = ($this->helper->is_demo() ? self::DEMO_URL : self::REAL_URL) . 'customer_info.php?';
+            $this->customer_info_url = ($this->helper->isDemo() ? self::DEMO_URL : self::REAL_URL) . 'customer_info.php?';
     }
 
     public function setCustomerInfoUrl($url)

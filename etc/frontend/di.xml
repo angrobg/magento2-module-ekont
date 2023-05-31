@@ -3,15 +3,7 @@
     <type name="Magento\Checkout\Model\CompositeConfigProvider">
         <arguments>
             <argument name="configProviders" xsi:type="array">
-                <item name="cms_block_config_provider" xsi:type="object">Oxl\Delivery\Model\ConfigProvider</item>
-            </argument>
-        </arguments>
-    </type>
-    <type name="Oxl\Delivery\Model\ConfigProvider">
-        <arguments>
-            <argument name="blockIds" xsi:type="array">
-                <item name="checkout_block" xsi:type="string">checkout_block</item>
-                <!--item name="another_block" xsi:type="string">another_block</item-->
+                <item name="econt_checkout_config_provider" xsi:type="object">Oxl\Delivery\Model\Checkout\ConfigProvider</item>
             </argument>
         </arguments>
     </type>
