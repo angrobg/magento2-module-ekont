@@ -46,6 +46,8 @@ define([
     // window.econtModalHelper = helperObj;
 
     return function (config, element) {
+        var checkoutConfig = window.checkoutConfig;
+
         var helperObj = new function () {
             var obj = {
                 shipping_data: {},
@@ -59,7 +61,7 @@ define([
                 shippingPriceCalculated: false,
                 shippingPriceNeedsRecalculation: true,
                 cashondelivery_pm_code: 'cashondelivery',
-                selected_carrier_code: '',
+                selected_carrier_code: checkoutConfig.selectedShippingMethod.carrier_code,
                 calculationInProgress: false,
                 lastSubtotal: quote.totals._latestValue.subtotal,
                 lastEkontMessageData: null,
@@ -154,6 +156,12 @@ define([
                             self.updateShippingAddress();
                         }
                     });
+
+                    if (self.isCarrierSelected()) {
+                        self.loadModal();
+                    }
+
+                    self.toggleCalculateshippingButton();
                 },
                 isCODSelected: function () {
                     return this.paymentMethod === this.cashondelivery_pm_code;
@@ -169,9 +177,10 @@ define([
                     this.iframeLoadedOnce = true;
                     var self = this;
 
-                    setTimeout(function () {
-                        self.loadModal();
-                    }, 800)
+                    self.loadModal();
+                    // setTimeout(function () {
+                    //     self.loadModal();
+                    // }, 800)
                 },
                 needsPriceRecalculation: function () {
                     return this.shippingPriceNeedsRecalculation;
@@ -181,16 +190,19 @@ define([
                 },
                 toggleCalculateshippingButton: function () {
                     var self = this;
+                    console.log('econt :: toggleCalculateshippingButton');
 
-                    setTimeout(function () {
-                        $('#econt-iframe-modal').toggle(self.isCarrierSelected());
-                        // $('#block-econtdelivery-custom').toggle(self.isCarrierSelected());
-                        // if (object.carrier_code !== 'econtdelivery') {
-                        //     $('#block-econtdelivery-custom').hide()
-                        // } else if (object.carrier_code === 'econtdelivery') {
-                        //     $('#block-econtdelivery-custom').show()
-                        // }
-                    }, 800)
+                    $('#econt-iframe-modal').toggle(self.isCarrierSelected());
+
+                    // setTimeout(function () {
+                    //     $('#econt-iframe-modal').toggle(self.isCarrierSelected());
+                    //     // $('#block-econtdelivery-custom').toggle(self.isCarrierSelected());
+                    //     // if (object.carrier_code !== 'econtdelivery') {
+                    //     //     $('#block-econtdelivery-custom').hide()
+                    //     // } else if (object.carrier_code === 'econtdelivery') {
+                    //     //     $('#block-econtdelivery-custom').show()
+                    //     // }
+                    // }, 800)
                 },
                 loadModal: function () {
                     if (!this.isCarrierSelected()) {
