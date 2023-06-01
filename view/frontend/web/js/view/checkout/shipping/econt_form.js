@@ -42,6 +42,9 @@ define([
     console.log('econt config', config);
 
     var checkoutConfig = window.checkoutConfig;
+    var selectedShippingMethod = checkoutConfig.selectedShippingMethod || null;
+    var selectedCarrierCode = selectedShippingMethod ? selectedShippingMethod.carrier_code : null;
+    selectedCarrierCode = selectedCarrierCode || null;
 
     window.addEventListener('message', function (message) {
 
@@ -103,7 +106,7 @@ define([
         shippingPriceCalculated: false,
         shippingPriceNeedsRecalculation: true,
         cashondelivery_pm_code: 'cashondelivery',
-        selected_carrier_code: checkoutConfig.selectedShippingMethod.carrier_code,
+        selected_carrier_code: selectedCarrierCode,
         calculationInProgress: false,
         lastSubtotal: quote.totals._latestValue.subtotal,
         lastEkontMessageData: null,
