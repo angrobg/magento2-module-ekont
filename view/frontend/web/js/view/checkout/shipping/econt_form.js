@@ -16,7 +16,8 @@ define([
     'Magento_Checkout/js/model/error-processor',
     'Magento_Checkout/js/model/shipping-service',
     'Magento_Checkout/js/model/resource-url-manager',
-    'Magento_Checkout/js/model/shipping-rate-registry'
+    'Magento_Checkout/js/model/shipping-rate-registry',
+    'Magento_Checkout/js/action/set-shipping-information'
 ], function ($,
              Component,
              _,
@@ -34,7 +35,8 @@ define([
              errorProcessor,
              shippingService,
              resourceUrlManager,
-             rateRegistry) {
+             rateRegistry,
+             setShippingInformationAction) {
     'use strict';
 
     var config = window.checkoutConfig['econtdelivery'];
@@ -157,15 +159,20 @@ define([
                 if (self.selected_carrier_code !== val.carrier_code) {
                     self.selected_carrier_code = val.carrier_code;
 
+                    self.toggleEcontContainer();
+
                     if (self.isCarrierSelected()) {
                         console.log('ekontdelivery :: selected', val);
-                        // self.updateShippingAddress();
+                        self.updateShippingAddress();
 
                         if (self.iframeInitiatedOnce) {
                             self.loadModal();
                         }
+
+                        setTimeout(function () {
+                            self.presentEcontWarning();
+                        }, 50);
                     }
-                    self.toggleEcontContainer();
                 }
                 // econtModalHelper.toggleEcontContainer(val);
                 // if( ! stepNavigator.isProcessed( 'shipping' ) && val['carrier_code'] === "econtdelivery" && shipping_price_cod === null ) {
@@ -214,8 +221,12 @@ define([
             // NIMA CHANGES
             // update the shipping address before changing it to the current one
             $(document).on('checkout-before-select-shipping-method', function (e, data) {
-                if (data.method.carrier_code === self.carrier_code) {
-                    self.updateShippingAddress();
+                if (!self.isCarrierSelected() && data.method.carrier_code === self.carrier_code) {
+                    console.log('ekontdelivery checkout-before-select-shipping-method', data);
+
+                    // setTimeout(function () {
+                    //     self.updateShippingAddress();
+                    // }, 20);
                 }
             });
 
@@ -223,6 +234,19 @@ define([
             self.toggleEcontContainer();
 
             window.econtModalHelper = self;
+        },
+        presentEcontWarning() {
+            alert({
+                content: $.mage.__('To ship with EKONT please do not forget to press the \'Recalculate Price\' button after you enter the address!'),
+                actions: {
+                    always: function () {
+                        // scroll to the iframe
+                        // $([document.documentElement, document.body]).animate({
+                        //     scrollTop: $("#econt-iframe-modal").offset().top
+                        // }, 1000);
+                    }
+                }
+            });
         },
         isCODSelected: function () {
             return this.paymentMethod === this.cashondelivery_pm_code;
@@ -239,7 +263,7 @@ define([
             var self = this;
 
             setTimeout(function () {
-                self.loadModal();
+                self.loadModal(true);
             }, 800);
         },
         needsPriceRecalculation: function () {
@@ -258,8 +282,10 @@ define([
             //
             // container.toggle(this.isCarrierSelected());
         },
-        loadModal: function () {
+        loadModal: function (presentWarning) {
             console.log('econt :: loadModal');
+
+            presentWarning = presentWarning || false;
 
             if (this.loadModalRef) {
                 clearTimeout(this.loadModalRef);
@@ -279,9 +305,13 @@ define([
 
             var self = this;
 
-            this.loadModalRef = setTimeout(function() {
+            this.loadModalRef = setTimeout(function () {
                 self.prepareIframe(cdata);
                 self.iframeInitiatedOnce = true;
+
+                if (presentWarning && self.isCarrierSelected()) {
+                    self.presentEcontWarning();
+                }
             }, 5);
         },
         loadModalRef: null,
@@ -500,7 +530,7 @@ define([
         },
         updateShippingAddress: function () {
 
-            console.log('ekontdelivery :: updateShippingAddress');
+            console.log('ekontdelivery :: updateShippingAddress (1)', this.shipping_data);
 
             var data = this.shipping_data;
 
@@ -545,7 +575,13 @@ define([
                     quote.billingAddress().company = company;
             }
 
-            var addrLine = data['address'] !== '' ? data['address'] : data['office_name'];
+            var addrLine = '';
+
+            if (data['office_name'].length) {
+                addrLine = data['office_name'] + ' (Office)';
+            } else {
+                addrLine = data['address'];
+            }
 
             quote.shippingAddress().street.splice(0, quote.shippingAddress().street.length);
             quote.shippingAddress().street.push(addrLine);
@@ -558,7 +594,7 @@ define([
                 // quote.billingAddress().street[0] = data['address'] !== '' ? data['address'] : data['office_name'];
             }
 
-            console.log('ekont :: updateShippingAddress address line', {
+            console.log('ekontdelivery :: updateShippingAddress address line', {
                 addrLine: addrLine,
                 shippingStreet: quote.shippingAddress().street,
                 billingStreet: quote.billingAddress().street
@@ -586,15 +622,14 @@ define([
                 quote.guestEmail = data['email'];
             }
 
-            console.log('ekont :: updateShippingAddress', {
+            console.log('ekontdelivery :: updateShippingAddress', {
                 data: data,
                 quote: quote
             });
 
-            console.log('ekont :: updateShippingAddress', quote.shippingAddress());
+            console.log('ekontdelivery :: updateShippingAddress', quote.shippingAddress());
 
             checkoutData.setNewCustomerShippingAddress(quote.shippingAddress());
-            // checkoutData.setNewCustomerBillingAddress(quote.billingAddress());
         },
         updatePaymentDataState: function (silent) {
             // console.log('updatePaymentDataState');
@@ -649,6 +684,12 @@ define([
                 shippingService.setShippingRates(r);
                 // _that.updateQuoteShippingTotals(priceData);
                 _that.updateTotals(priceData);
+                _that.updateShippingAddress();
+
+                window.loaderIsNotAllowed = true;
+                setShippingInformationAction();
+                delete window.loaderIsNotAllowed;
+
             }).fail(function (response) {
                 shippingService.setShippingRates([]);
                 errorProcessor.process(response);
@@ -794,7 +835,6 @@ define([
                                     needsRecalculation: _that.shippingPriceNeedsRecalculation
                                 });
 
-                                _that.updateShippingAddress();
                                 _that.updatePaymentDataState();
                             });
                         }/* else {
