@@ -390,43 +390,45 @@ define([
                 orderParams.customer_office_code = ''
             }
 
+            var shippingAddressFromData = cdata.shippingAddressFromData || {};
+
             orderParams.customer_name = orderParams.customer_name.length ?
                 orderParams.customer_name.length :
-                ((cdata.shippingAddressFromData.firstname || '') + ' ' +
-                    (cdata.shippingAddressFromData.lastname || '')).trim()
+                ((shippingAddressFromData.firstname || '') + ' ' +
+                    (shippingAddressFromData.lastname || '')).trim()
 
             orderParams.customer_company = orderParams.customer_company.length ?
                 orderParams.customer_company :
-                (cdata.shippingAddressFromData.company || '')
+                (shippingAddressFromData.company || '')
 
             orderParams.customer_phone = orderParams.customer_phone.length ?
                 orderParams.customer_phone :
-                (cdata.shippingAddressFromData.telephone || '')
+                (shippingAddressFromData.telephone || '')
 
             orderParams.customer_email = orderParams.customer_email.length ?
                 orderParams.customer_email :
                 (cdata.validatedEmailValue || '')
 
             // pass the following info only if it is full - otherwise Ekont shows a stupid mistake
-            if ((cdata.shippingAddressFromData.city || '').length &&
+            if ((shippingAddressFromData.city || '').length &&
                 (orderParams.customer_post_code === '-' ||
                 !orderParams.customer_post_code ? this.defaultPostCode : orderParams.customer_post_code).length &&
-                cdata.shippingAddressFromData.street.length
+                shippingAddressFromData.street.length
             ) {
                 orderParams.customer_city_name = orderParams.customer_city_name.length ?
                     orderParams.customer_city_name :
-                    (cdata.shippingAddressFromData.city || '')
+                    (shippingAddressFromData.city || '')
 
                 if (!orderParams.customer_post_code.length) {
-                    orderParams.customer_post_code = cdata.shippingAddressFromData.postcode || ''
+                    orderParams.customer_post_code = shippingAddressFromData.postcode || ''
                     orderParams.customer_post_code = (orderParams.customer_post_code === '-' ||
                     !orderParams.customer_post_code ? this.defaultPostCode : orderParams.customer_post_code);
                 }
 
                 if (!orderParams.customer_address.length) {
                     orderParams.customer_address = ''
-                    _.forEach(cdata.shippingAddressFromData.street, function (str, index) {
-                        if (index > 0 && str.length > 0 && index <= (_.size(cdata.shippingAddressFromData.street) - 1)) {
+                    _.forEach(shippingAddressFromData.street, function (str, index) {
+                        if (index > 0 && str.length > 0 && index <= (_.size(shippingAddressFromData.street) - 1)) {
                             orderParams.customer_address += ', ';
                         }
                         orderParams.customer_address += str;
