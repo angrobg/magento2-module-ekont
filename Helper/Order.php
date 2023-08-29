@@ -35,6 +35,8 @@ class Order extends AbstractHelper
      */
     protected OrderInterfaceFactory $ekontOrderFactory;
 
+    protected Data $dataHelper;
+
     /**
      * @param Context $context
      * @param Session $checkoutSession
@@ -49,7 +51,8 @@ class Order extends AbstractHelper
         OxlDeliveryFactory       $oxldelivery,
         ManagerInterface         $messageManager,
         OrderInterfaceFactory    $ekontOrderFactory,
-        OrderRepositoryInterface $ekontOrderRepository
+        OrderRepositoryInterface $ekontOrderRepository,
+        Data                     $dataHelper
     )
     {
         $this->_checkoutSession = $checkoutSession;
@@ -57,12 +60,19 @@ class Order extends AbstractHelper
         $this->_messageManager = $messageManager;
         $this->ekontOrderFactory = $ekontOrderFactory;
         $this->ekontOrderRepository = $ekontOrderRepository;
+        $this->dataHelper = $dataHelper;
 
         parent::__construct($context);
     }
 
     public function syncOrder($order = null, $get_new_price = false)
     {
+        if (!$this->dataHelper->isActive()) {
+            return false;
+        }
+
+        error_log('Ekont syncOrder');
+
         if ($order === null) {
             error_log('Ekont sync_order: NO ORDER - DOING NOTHING');
             return false;

@@ -3,6 +3,7 @@
 namespace Oxl\Delivery\Observer;
 
 use \Oxl\Delivery\Helper\Order;
+use function Sentry\captureException;
 
 class CreateOrder implements \Magento\Framework\Event\ObserverInterface
 {
@@ -15,10 +16,15 @@ class CreateOrder implements \Magento\Framework\Event\ObserverInterface
 
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        error_log('Ekont createOrder observer hit');
-
         $order = $observer->getEvent()->getOrder();
 
-        $this->helper->syncOrder($order);
+        try {
+            $this->helper->syncOrder($order);
+        } catch (\Exception $e) {
+            error_log('Ekont Exception: ' . $e->getMessage() . ', trace: ' . $e->getTraceAsString() . ', line: ' . $e->getLine());
+
+            // log the exception and continue - we should not throw here for better UX
+            captureException($e);
+        }
     }
 }

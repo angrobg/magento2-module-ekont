@@ -51,6 +51,12 @@ class Data extends AbstractHelper
         return boolval($options);
     }
 
+    public function isActive()
+    {
+        $options = $this->getConfig('carriers/econtdelivery/active');
+        return boolval($options);
+    }
+
     /**
      * Based on the demo setting returns the appropiate url
      *
