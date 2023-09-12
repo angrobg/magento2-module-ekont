@@ -436,8 +436,6 @@ define([
                 }
             }
 
-            var self = this;
-
             this.lastOrderParams = orderParams;
 
             console.log('Ekont prepare iframe', {
