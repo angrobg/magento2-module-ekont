@@ -116,7 +116,7 @@ define([
             this._super(); //you must call super on components or they will not render
 
             var container = $('#econt-iframe-modal');
-            console.log('econt :: toggleEcontConaaaatainer', {
+            console.log('econt :: toggleEcontContainer', {
                 selected: this.isCarrierSelected(),
                 container: container.length
             });
